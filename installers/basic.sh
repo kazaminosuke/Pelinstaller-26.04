@@ -389,8 +389,9 @@ ubuntu_dep() {
   # Add Ubuntu universe repo
   add-apt-repository universe -y
 
-  # Add PPA for PHP (we need 8.4)
-  LC_ALL=C.UTF-8 add-apt-repository -y ppa:ondrej/php
+  # Add sury repo for PHP 8.4 (force noble codename for compatibility)
+  curl -o /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
+  echo "deb https://packages.sury.org/php/ noble main" | tee /etc/apt/sources.list.d/php.list
 }
 
 debian_dep() {
