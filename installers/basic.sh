@@ -25,7 +25,7 @@ export SUPPORTED=false
 # Download URLs
 export PANEL_DL_URL="https://github.com/pelican-dev/panel/releases/latest/download/panel.tar.gz"
 export WINGS_DL_URL="https://github.com/pelican-dev/wings/releases/latest/download/wings_linux_"
-export GIT_REPO_URL="https://raw.githubusercontent.com/Zinidia/Pelinstaller/Production"
+export GIT_REPO_URL="https://raw.githubusercontent.com/ratx0x0/Pelinstaller-26.04/Production"
 
 # Colors
 COLOR_YELLOW='\033[1;33m'

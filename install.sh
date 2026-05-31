@@ -22,16 +22,16 @@ set -e
 #   You should have received a copy of the GNU General Public License                #
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.           #
 #                                                                                    #
-# https://github.com/Zinidia/Pelinstaller/blob/Production/LICENSE.md  #
+# https://github.com/ratx0x0/Pelinstaller-26.04/blob/Production/LICENSE.md  #
 #                                                                                    #
 # This script is not associated with the official Pelican Project.                   #
-# https://github.com/Zinidia/Pelinstaller                             #
+# https://github.com/ratx0x0/Pelinstaller-26.04                             #
 #                                                                                    #
 ######################################################################################
 
 export GITHUB_SOURCE="Production"
 export SCRIPT_RELEASE="canary"
-export GITHUB_BASE_URL="https://raw.githubusercontent.com/Zinidia/Pelinstaller"
+export GITHUB_BASE_URL="https://raw.githubusercontent.com/ratx0x0/Pelinstaller-26.04"
 
 LOG_PATH="/var/log/pelinstaller.log"
 

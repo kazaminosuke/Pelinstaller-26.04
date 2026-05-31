@@ -33,6 +33,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           path-to-signatures: '.github/cla/signatures.json'
-          path-to-document: 'https://github.com/Zinidia/Pelinstaller/blob/Production/CLA.md'
+          path-to-document: 'https://github.com/ratx0x0/Pelinstaller-26.04/blob/Production/CLA.md'
           branch: 'Production'
           allowlist: dependabot[bot], renovate[bot], Zinidia

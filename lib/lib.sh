@@ -22,10 +22,10 @@ set -e
 #   You should have received a copy of the GNU General Public License                #
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.           #
 #                                                                                    #
-# https://github.com/Zinidia/Pelinstaller/blob/Production/LICENSE.md  #
+# https://github.com/ratx0x0/Pelinstaller-26.04/blob/Production/LICENSE.md  #
 #                                                                                    #
 # This script is not associated with the official Pelican Project.                   #
-# https://github.com/Zinidia/Pelinstaller                             #
+# https://github.com/ratx0x0/Pelinstaller-26.04                             #
 #                                                                                    #
 ######################################################################################
 
@@ -53,7 +53,7 @@ export SUPPORTED=false
 export PANEL_DL_URL="https://github.com/pelican-dev/panel/releases/latest/download/panel.tar.gz"
 export WINGS_DL_BASE_URL="https://github.com/pelican-dev/wings/releases/latest/download/wings_linux_"
 export MARIADB_URL="https://downloads.mariadb.com/MariaDB/mariadb_repo_setup"
-export GITHUB_BASE_URL=${GITHUB_BASE_URL:-"https://raw.githubusercontent.com/Zinidia/Pelinstaller"}
+export GITHUB_BASE_URL=${GITHUB_BASE_URL:-"https://raw.githubusercontent.com/ratx0x0/Pelinstaller-26.04"}
 export GITHUB_URL="$GITHUB_BASE_URL/$GITHUB_SOURCE"
 
 # Colors
@@ -127,7 +127,7 @@ welcome() {
   output ""
   output "Copyright (C) 2018 - 2024, Vilhelm Prytz, <vilhelm@prytznet.se>"
   output "Copyright (C) 2021 - 2024, Matthew Jacob, <git@matthew.network>"
-  output "https://github.com/Zinidia/Pelinstaller"
+  output "https://github.com/ratx0x0/Pelinstaller-26.04"
   output ""
   output "This script is not associated with the official Pelican Project."
   output ""

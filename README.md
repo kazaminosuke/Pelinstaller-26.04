@@ -1,6 +1,6 @@
 # Pelinstaller
 
-[![License: GPL v3](https://img.shields.io/github/license/Zinidia/Pelinstaller)](LICENSE.md)
+[![License: GPL v3](https://img.shields.io/github/license/ratx0x0/Pelinstaller-26.04)](LICENSE.md)
 
 <table><tr></tr><tr><td>
 
@@ -17,7 +17,7 @@ Learn more about [Pelican's Project](https://pelican.dev/) here. This script is 
 To use the installation scripts, simply run this command as root. The script will ask you whether you would like to install just the panel, just Wings or both.
 
 ```bash
-bash <(curl -Ss https://raw.githubusercontent.com/Zinidia/Pelinstaller/Production/install.sh || wget -O - https://raw.githubusercontent.com/Zinidia/Pelinstaller/Production/install.sh) auto
+bash <(curl -Ss https://raw.githubusercontent.com/ratx0x0/Pelinstaller-26.04/Production/install.sh || wget -O - https://raw.githubusercontent.com/ratx0x0/Pelinstaller-26.04/Production/install.sh) auto
 ```
 
 _Note: On some systems, it's required to be already logged in as root before executing the one-line command (where `sudo` is in front of the command does not work)._
@@ -36,7 +36,7 @@ Here is a [YouTube Video](https://www.youtube.com/watch?v=E8UJhyUFoHM) that illu
 
 ## Help and support
 
-For help and support regarding the script itself and **not the official Pelican project**, create a [Github Issue](https://github.com/Zinidia/Pelinstaller/issues).
+For help and support regarding the script itself and **not the official Pelican project**, create a [Github Issue](https://github.com/ratx0x0/Pelinstaller-26.04/issues).
 
 ## Supported installations
 
@@ -75,7 +75,7 @@ The installation scripts can install and configure a firewall for you. The scrip
 
 ### Creating a release
 
-In `install.sh` github source and script release variables should change every release. Firstly, update the `CHANGELOG.md` so that the release date and release tag are both displayed. No changes should be made to the changelog points themselves. Secondly, update `GITHUB_SOURCE` and `SCRIPT_RELEASE` in `install.sh`. Finally, you can now push a commit with the message `Release vX.Y.Z`. Create a release on GitHub. See [this commit](https://github.com/Zinidia/Pelinstaller/commit/90aaae10785f1032fdf90b216a4a8d8ca64e6d44) for reference.
+In `install.sh` github source and script release variables should change every release. Firstly, update the `CHANGELOG.md` so that the release date and release tag are both displayed. No changes should be made to the changelog points themselves. Secondly, update `GITHUB_SOURCE` and `SCRIPT_RELEASE` in `install.sh`. Finally, you can now push a commit with the message `Release vX.Y.Z`. Create a release on GitHub. See [this commit](https://github.com/ratx0x0/Pelinstaller-26.04/commit/90aaae10785f1032fdf90b216a4a8d8ca64e6d44) for reference.
 
 
 ## Sponsors ✨

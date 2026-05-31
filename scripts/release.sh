@@ -34,7 +34,7 @@ git push
 
 output "Release $RELEASE pushed"
 
-output "Create a new release, with changelog below - https://github.com/Zinidia/Pelinstaller/releases/new"
+output "Create a new release, with changelog below - https://github.com/ratx0x0/Pelinstaller-26.04/releases/new"
 output ""
 
 changelog=$(scripts/changelog_parse.py)
