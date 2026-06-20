@@ -31,7 +31,7 @@ set -e
 
 export GITHUB_SOURCE="Production"
 export SCRIPT_RELEASE="canary"
-export GITHUB_BASE_URL="https://raw.githubusercontent.com/ratx0x0/Pelinstaller-26.04"
+export GITHUB_BASE_URL="https://raw.githubusercontent.com/kazaminosuke/Pelinstaller-26.04"
 
 LOG_PATH="/var/log/pelinstaller.log"
 

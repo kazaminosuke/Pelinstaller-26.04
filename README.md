@@ -17,7 +17,7 @@ Learn more about [Pelican's Project](https://pelican.dev/) here. This script is 
 To use the installation scripts, simply run this command as root. The script will ask you whether you would like to install just the panel, just Wings or both.
 
 ```bash
-bash <(curl -Ss https://raw.githubusercontent.com/ratx0x0/Pelinstaller-26.04/Production/install.sh || wget -O - https://raw.githubusercontent.com/ratx0x0/Pelinstaller-26.04/Production/install.sh) auto
+bash <(curl -Ss https://raw.githubusercontent.com/kazaminosuke/Pelinstaller-26.04/Production/install.sh || wget -O - https://raw.githubusercontent.com/kazaminosuke/Pelinstaller-26.04/Production/install.sh) auto
 ```
 
 _Note: On some systems, it's required to be already logged in as root before executing the one-line command (where `sudo` is in front of the command does not work)._
@@ -48,22 +48,22 @@ List of supported installation setups for panel and Wings (installations support
 | ---------------- | ------- | ------------------ | ----------- |
 | Ubuntu           | 16.04   | :red_circle:       |             |
 |                  | 18.04   | :red_circle: \*    |             |
-|                  | 20.04   | :white_check_mark: | 8.4         |
-|                  | 22.04   | :white_check_mark: | 8.4         |
-|                  | 24.04   | :white_check_mark: | 8.4         |
-|                  | 26.04   | :white_check_mark: | 8.4         |
+|                  | 20.04   | :white_check_mark: | 8.5         |
+|                  | 22.04   | :white_check_mark: | 8.5         |
+|                  | 24.04   | :white_check_mark: | 8.5         |
+|                  | 26.04   | :white_check_mark: | 8.5         |
 | Debian           | 8       | :red_circle: \*    |             |
 |                  | 9       | :red_circle: \*    |             |
-|                  | 10      | :white_check_mark: | 8.4         |
-|                  | 11      | :white_check_mark: | 8.4         |
-|                  | 12      | :white_check_mark: | 8.4         |
+|                  | 10      | :white_check_mark: | 8.5         |
+|                  | 11      | :white_check_mark: | 8.5         |
+|                  | 12      | :white_check_mark: | 8.5         |
 | CentOS           | 6       | :red_circle:       |             |
 |                  | 7       | :red_circle: \*    |             |
 |                  | 8       | :red_circle: \*    |             |
-| Rocky Linux      | 8       | :white_check_mark: | 8.4         |
-|                  | 9       | :white_check_mark: | 8.4         |
-| AlmaLinux        | 8       | :white_check_mark: | 8.4         |
-|                  | 9       | :white_check_mark: | 8.4         |
+| Rocky Linux      | 8       | :white_check_mark: | 8.5         |
+|                  | 9       | :white_check_mark: | 8.5         |
+| AlmaLinux        | 8       | :white_check_mark: | 8.5         |
+|                  | 9       | :white_check_mark: | 8.5         |
 
 _\* Indicates an operating system and release that previously was supported by this script._
 
