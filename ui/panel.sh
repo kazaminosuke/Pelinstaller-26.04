@@ -42,16 +42,8 @@ fi
 # Domain name / IP
 export FQDN=""
 
-# Environment
-export timezone=""
+# Email (only used for Let's Encrypt)
 export email=""
-
-# Initial admin account
-export user_email=""
-export user_username=""
-export user_firstname=""
-export user_lastname=""
-export user_password=""
 
 # Assume SSL, will fetch different config if true
 export ASSUME_SSL=false
@@ -112,27 +104,8 @@ main() {
 
   check_os_x86_64
 
-  # The panel uses SQLite, so no database server or credentials are required.
-
-  readarray -t valid_timezones <<<"$(curl -s "$GITHUB_URL"/configs/valid_timezones.txt)"
-  output "List of valid timezones here $(hyperlink "https://www.php.net/manual/en/timezones.php")"
-
-  while [ -z "$timezone" ]; do
-    echo -n "* Select timezone [America/Chicago]: "
-    read -r timezone_input
-
-    array_contains_element "$timezone_input" "${valid_timezones[@]}" && timezone="$timezone_input"
-    [ -z "$timezone_input" ] && timezone="America/Chicago" # because köttbullar!
-  done
-
-  email_input email "Provide the email address that will be used to configure Let's Encrypt and Pelican: " "Email cannot be empty or invalid"
-
-  # Initial admin account
-  email_input user_email "Email address for the initial admin account: " "Email cannot be empty or invalid"
-  required_input user_username "Username for the initial admin account: " "Username cannot be empty"
-  required_input user_firstname "First name for the initial admin account: " "Name cannot be empty"
-  required_input user_lastname "Last name for the initial admin account: " "Name cannot be empty"
-  password_input user_password "Password for the initial admin account: " "Password cannot be empty"
+  # The database, admin account and Eggs are configured later through the web
+  # installer, so the CLI only needs the details required to deploy the panel.
 
   print_brake 72
 
@@ -157,6 +130,11 @@ main() {
     [ "$CONFIGURE_LETSENCRYPT" == false ] && ask_assume_ssl
   fi
 
+  # Let's Encrypt needs an email address to register the certificate
+  if [ "$CONFIGURE_LETSENCRYPT" == true ]; then
+    email_input email "Provide the email address to configure Let's Encrypt: " "Email cannot be empty or invalid"
+  fi
+
   # verify FQDN if user has selected to assume SSL or configure Let's Encrypt
   [ "$CONFIGURE_LETSENCRYPT" == true ] || [ "$ASSUME_SSL" == true ] && bash <(curl -s "$GITHUB_URL"/lib/verify-fqdn.sh) "$FQDN"
 
@@ -177,31 +155,32 @@ main() {
 summary() {
   print_brake 62
   output "Pelican panel $PELICAN_PANEL_VERSION with nginx on $OS"
-  output "Database: SQLite"
-  output "Timezone: $timezone"
-  output "Email: $email"
-  output "User email: $user_email"
-  output "Username: $user_username"
-  output "First name: $user_firstname"
-  output "Last name: $user_lastname"
-  output "User password: (censored)"
   output "Hostname/FQDN: $FQDN"
   output "Configure Firewall? $CONFIGURE_FIREWALL"
   output "Configure Let's Encrypt? $CONFIGURE_LETSENCRYPT"
   output "Assume SSL? $ASSUME_SSL"
+  output ""
+  output "Database, admin account and Eggs are configured afterwards"
+  output "through the web installer at http://$FQDN/installer"
   print_brake 62
 }
 
 goodbye() {
+  local scheme="http"
+  { [ "$ASSUME_SSL" == true ] || [ "$CONFIGURE_LETSENCRYPT" == true ]; } && scheme="https"
+
   print_brake 62
   output "Panel installation completed"
   output ""
 
-  [ "$CONFIGURE_LETSENCRYPT" == true ] && output "Your panel should be accessible from $(hyperlink "$FQDN")"
-  [ "$ASSUME_SSL" == true ] && [ "$CONFIGURE_LETSENCRYPT" == false ] && output "You have opted in to use SSL, but not via Let's Encrypt automatically. Your panel will not work until SSL has been configured."
-  [ "$ASSUME_SSL" == false ] && [ "$CONFIGURE_LETSENCRYPT" == false ] && output "Your panel should be accessible from $(hyperlink "$FQDN")"
-
+  output "To finish the setup, open the web installer in your browser and"
+  output "complete the database, admin account and Eggs configuration:"
   output ""
+  output "    ${scheme}://${FQDN}/installer"
+  output ""
+
+  [ "$ASSUME_SSL" == true ] && [ "$CONFIGURE_LETSENCRYPT" == false ] && output "You have opted in to use SSL, but not via Let's Encrypt automatically. Your panel will not work until SSL has been configured."
+
   output "Installation is using nginx on $OS"
   output "Thank you for using this script."
   [ "$CONFIGURE_FIREWALL" == false ] && echo -e "* ${COLOR_RED}Note${COLOR_NC}: If you haven't configured the firewall: 80/443 (HTTP/HTTPS) is required to be open!"

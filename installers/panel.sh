@@ -42,9 +42,6 @@ fi
 # Domain name / IP
 FQDN="${FQDN:-localhost}"
 
-# Environment
-timezone="${timezone:-America/Chicago}"
-
 # Assume SSL, will fetch different config if true
 ASSUME_SSL="${ASSUME_SSL:-false}"
 CONFIGURE_LETSENCRYPT="${CONFIGURE_LETSENCRYPT:-false}"
@@ -52,41 +49,11 @@ CONFIGURE_LETSENCRYPT="${CONFIGURE_LETSENCRYPT:-false}"
 # Firewall
 CONFIGURE_FIREWALL="${CONFIGURE_FIREWALL:-false}"
 
-# Must be assigned to work, no default values
+# Email is only used to obtain a Let's Encrypt certificate
 email="${email:-}"
-user_email="${user_email:-}"
-user_username="${user_username:-}"
-user_firstname="${user_firstname:-}"
-user_lastname="${user_lastname:-}"
-user_password="${user_password:-}"
 
-if [[ -z "${email}" ]]; then
-  error "Email is required"
-  exit 1
-fi
-
-if [[ -z "${user_email}" ]]; then
-  error "User email is required"
-  exit 1
-fi
-
-if [[ -z "${user_username}" ]]; then
-  error "User username is required"
-  exit 1
-fi
-
-if [[ -z "${user_firstname}" ]]; then
-  error "User firstname is required"
-  exit 1
-fi
-
-if [[ -z "${user_lastname}" ]]; then
-  error "User lastname is required"
-  exit 1
-fi
-
-if [[ -z "${user_password}" ]]; then
-  error "User password is required"
+if [[ "${CONFIGURE_LETSENCRYPT}" == true && -z "${email}" ]]; then
+  error "Email is required to configure Let's Encrypt"
   exit 1
 fi
 
@@ -119,36 +86,16 @@ install_composer_deps() {
   success "Installed composer dependencies!"
 }
 
-# Configure environment
+# Prepare the panel so the web installer can run
 configure() {
-  output "Configuring environment.."
+  output "Preparing panel.."
 
-  local app_url="http://$FQDN"
-  [ "$ASSUME_SSL" == true ] && app_url="https://$FQDN"
-  [ "$CONFIGURE_LETSENCRYPT" == true ] && app_url="https://$FQDN"
-
-  # Generate encryption key
+  # Generate the application encryption key so the web installer page can load.
+  # Database setup, the admin account and Egg imports are intentionally left to
+  # the web installer at http://<FQDN>/installer
   php artisan key:generate --force
 
-  # Fill in environment:setup automatically
-  php artisan p:environment:setup
-  sed -i "s|^APP_URL=.*|APP_URL=${app_url}|" .env
-  sed -i "s|^APP_INSTALLED=false|APP_INSTALLED=true|" .env
-
-  # Configure the panel to use SQLite (no external database server required)
-  php artisan p:environment:database --driver="sqlite"
-
-  # configures database
-  php artisan migrate --seed --force
-
-  # Create user account
-  php artisan p:user:make \
-    --email="$user_email" \
-    --username="$user_username" \
-    --password="$user_password" \
-    --admin=1
-
-  success "Configured environment!"
+  success "Panel prepared!"
 }
 
 # Set proper directory permissions for distro
@@ -413,6 +360,11 @@ perform_install() {
   configure_nginx
   [ "$CONFIGURE_LETSENCRYPT" == true ] && letsencrypt
   set_folder_permissions
+
+  local scheme="http"
+  { [ "$ASSUME_SSL" == true ] || [ "$CONFIGURE_LETSENCRYPT" == true ]; } && scheme="https"
+  success "Base installation complete!"
+  output "Open ${scheme}://${FQDN}/installer in your browser to finish setup (database, admin account and Eggs)."
   return 0
 }
 
