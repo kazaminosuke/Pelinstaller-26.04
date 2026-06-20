@@ -42,11 +42,6 @@ fi
 # Domain name / IP
 FQDN="${FQDN:-localhost}"
 
-# Default MySQL credentials
-MYSQL_DB="${MYSQL_DB:-panel}"
-MYSQL_USER="${MYSQL_USER:-pelican}"
-MYSQL_PASSWORD="${MYSQL_PASSWORD:-$(gen_passwd 64)}"
-
 # Environment
 timezone="${timezone:-America/Chicago}"
 
@@ -140,14 +135,8 @@ configure() {
   sed -i "s|^APP_URL=.*|APP_URL=${app_url}|" .env
   sed -i "s|^APP_INSTALLED=false|APP_INSTALLED=true|" .env
 
-  # Fill in environment:database credentials automatically
-  php artisan p:environment:database \
-    --driver="mysql" \
-    --host="127.0.0.1" \
-    --port="3306" \
-    --database="$MYSQL_DB" \
-    --username="$MYSQL_USER" \
-    --password="$MYSQL_PASSWORD"
+  # Configure the panel to use SQLite (no external database server required)
+  php artisan p:environment:database --driver="sqlite"
 
   # configures database
   php artisan migrate --seed --force
@@ -232,8 +221,6 @@ enable_services() {
     ;;
   esac
   systemctl enable nginx
-  systemctl enable mariadb
-  systemctl start mariadb
 }
 
 selinux_allow() {
@@ -251,21 +238,21 @@ php_fpm_conf() {
 
 ubuntu_dep() {
   # Install deps for adding repos
-  install_packages "software-properties-common apt-transport-https ca-certificates gnupg"
+  install_packages "software-properties-common apt-transport-https ca-certificates gnupg lsb-release"
 
   # Add Ubuntu universe repo
   add-apt-repository universe -y
 
-  # Add sury repo for PHP 8.4 (force noble codename for compatibility)
+  # Add sury repo for PHP 8.5 (packages.sury.org supports Ubuntu 26.04 / resolute)
   curl -o /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
-  echo "deb https://packages.sury.org/php/ noble main" | tee /etc/apt/sources.list.d/php.list
+  echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list
 }
 
 debian_dep() {
   # Install deps for adding repos
   install_packages "dirmngr ca-certificates apt-transport-https lsb-release"
 
-  # Install PHP 8.4 using sury's repo
+  # Install PHP 8.5 using sury's repo
   curl -o /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
   echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list
 }
@@ -275,9 +262,9 @@ alma_rocky_dep() {
   install_packages "policycoreutils selinux-policy selinux-policy-targeted \
     setroubleshoot-server setools setools-console mcstrans"
 
-  # add remi repo (php8.4)
+  # add remi repo (php8.5)
   install_packages "epel-release http://rpms.remirepo.net/enterprise/remi-release-$OS_VER_MAJOR.rpm"
-  dnf module enable -y php:remi-8.4
+  dnf module enable -y php:remi-8.5
 }
 
 dep_install() {
@@ -296,8 +283,7 @@ dep_install() {
     update_repos
 
     # Install dependencies
-    install_packages "php8.4 php8.4-{cli,common,gd,intl,sqlite3,mysql,mbstring,bcmath,xml,fpm,curl,zip} \
-      mariadb-common mariadb-server mariadb-client \
+    install_packages "php8.5 php8.5-{cli,common,gd,intl,sqlite3,mbstring,bcmath,xml,fpm,curl,zip} \
       nginx \
       redis-server \
       zip unzip tar \
@@ -311,7 +297,6 @@ dep_install() {
 
     # Install dependencies
     install_packages "php php-{common,fpm,cli,json,intl,mysqlnd,mcrypt,gd,mbstring,pdo,zip,bcmath,dom,opcache,posix} \
-      mariadb mariadb-server \
       nginx \
       redis \
       zip unzip tar \
@@ -382,7 +367,7 @@ configure_nginx() {
 
   case "$OS" in
   ubuntu | debian)
-    PHP_SOCKET="/run/php/php8.4-fpm.sock"
+    PHP_SOCKET="/run/php/php8.5-fpm.sock"
     CONFIG_PATH_AVAIL="/etc/nginx/sites-available"
     CONFIG_PATH_ENABL="/etc/nginx/sites-enabled"
     ;;
@@ -422,8 +407,6 @@ perform_install() {
   install_composer
   ptdl_dl
   install_composer_deps
-  create_db_user "$MYSQL_USER" "$MYSQL_PASSWORD"
-  create_db "$MYSQL_DB" "$MYSQL_USER"
   configure
   insert_cronjob
   install_pelican_queue

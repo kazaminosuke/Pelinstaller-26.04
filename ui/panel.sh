@@ -42,11 +42,6 @@ fi
 # Domain name / IP
 export FQDN=""
 
-# Default MySQL credentials
-export MYSQL_DB=""
-export MYSQL_USER=""
-export MYSQL_PASSWORD=""
-
 # Environment
 export timezone=""
 export email=""
@@ -117,29 +112,7 @@ main() {
 
   check_os_x86_64
 
-  # set database credentials
-  output "Database configuration."
-  output ""
-  output "This will be the credentials used for communication between the MySQL"
-  output "database and the panel. You do not need to create the database"
-  output "before running this script, the script will do that for you."
-  output ""
-
-  MYSQL_DB="-"
-  while [[ "$MYSQL_DB" == *"-"* ]]; do
-    required_input MYSQL_DB "Database name (panel): " "" "panel"
-    [[ "$MYSQL_DB" == *"-"* ]] && error "Database name cannot contain hyphens"
-  done
-
-  MYSQL_USER="-"
-  while [[ "$MYSQL_USER" == *"-"* ]]; do
-    required_input MYSQL_USER "Database username (pelican): " "" "pelican"
-    [[ "$MYSQL_USER" == *"-"* ]] && error "Database user cannot contain hyphens"
-  done
-
-  # MySQL password input
-  rand_pw=$(gen_passwd 64)
-  password_input MYSQL_PASSWORD "Password (press enter to use randomly generated password): " "MySQL password cannot be empty" "$rand_pw"
+  # The panel uses SQLite, so no database server or credentials are required.
 
   readarray -t valid_timezones <<<"$(curl -s "$GITHUB_URL"/configs/valid_timezones.txt)"
   output "List of valid timezones here $(hyperlink "https://www.php.net/manual/en/timezones.php")"
@@ -204,9 +177,7 @@ main() {
 summary() {
   print_brake 62
   output "Pelican panel $PELICAN_PANEL_VERSION with nginx on $OS"
-  output "Database name: $MYSQL_DB"
-  output "Database user: $MYSQL_USER"
-  output "Database password: (censored)"
+  output "Database: SQLite"
   output "Timezone: $timezone"
   output "Email: $email"
   output "User email: $user_email"

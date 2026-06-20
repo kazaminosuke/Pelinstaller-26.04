@@ -37,13 +37,7 @@ COLOR_NC='\033[0m'
 IP_ADDRESS="${FQDN:-localhost}"
 
 # Default User credentials
-MYSQL_PASSWORD=$(head -c 100 /dev/urandom | LC_ALL=C tr -dc 'A-Za-z0-9!"#%&()*+,-./:;<=>?@[\]^_`{|}~' | fold -w 32 | head -n 1)
 USER_PASSWORD="${USER_PASSWORD:-}"
-
-# Database host
-MYSQL_DBHOST_HOST="127.0.0.1"
-MYSQL_DBHOST_USER="pelicanuser"
-MYSQL_DBHOST_PASSWORD="${MYSQL_DBHOST_PASSWORD:-}"
 
 # -------------- Load Lib -------------- #
 # Check if script is loaded, load if not or fail otherwise.
@@ -53,47 +47,6 @@ if ! fn_exists lib_loaded; then
   source <(curl -sSL "$GIT_REPO_URL"/lib/main.sh)
   ! fn_exists lib_loaded && echo "* ERROR: Could not load lib script" && exit 1
 fi
-
-# -------------------- MYSQL ------------------- #
-create_db_user() {
-  local db_user_name="$1"
-  local db_user_password="$2"
-  local db_host="${3:-127.0.0.1}"
-
-  output "Creating database user $db_user_name..."
-
-  mariadb -u root -e "CREATE USER '$db_user_name'@'$db_host' IDENTIFIED BY '$db_user_password';"
-  mariadb -u root -e "FLUSH PRIVILEGES;"
-
-  output "Database user $db_user_name created"
-}
-
-grant_all_privileges() {
-  local db_name="$1"
-  local db_user_name="$2"
-  local db_host="${3:-127.0.0.1}"
-
-  output "Granting all privileges on $db_name to $db_user_name..."
-
-  mariadb -u root -e "GRANT ALL PRIVILEGES ON $db_name.* TO '$db_user_name'@'$db_host' WITH GRANT OPTION;"
-  mariadb -u root -e "FLUSH PRIVILEGES;"
-
-  output "Privileges granted"
-
-}
-
-create_db() {
-  local db_name="$1"
-  local db_user_name="$2"
-  local db_host="${3:-127.0.0.1}"
-
-  output "Creating database $db_name..."
-
-  mariadb -u root -e "CREATE DATABASE $db_name;"
-  grant_all_privileges "$db_name" "$db_user_name" "$db_host"
-
-  output "Database $db_name created"
-}
 
 # --------------- Package Manager -------------- #
 # Argument for quite mode
@@ -245,14 +198,8 @@ configure_env() {
   sed -i "s|^APP_URL=.*|APP_URL=${app_url}|" .env
   sed -i "s|^APP_INSTALLED=false|APP_INSTALLED=true|" .env
 
-  # Configure database and backup credentials
-  php artisan p:environment:database \
-    --driver="mysql" \
-    --host="127.0.0.1" \
-    --port="3306" \
-    --database="panel" \
-    --username="pelican" \
-    --password="$MYSQL_PASSWORD"
+  # Configure the panel to use SQLite (no external database server required)
+  php artisan p:environment:database --driver="sqlite"
   # cp /var/www/pelican/.env /etc/pelican/.env
 
   # Seed database
@@ -365,8 +312,6 @@ enable_services() {
     ;;
   esac
   systemctl enable nginx
-  systemctl enable mariadb
-  systemctl start mariadb
 }
 
 selinux_allow() {
@@ -384,21 +329,21 @@ php_fpm_conf() {
 
 ubuntu_dep() {
   # Install deps for adding repos
-  install_packages "software-properties-common apt-transport-https ca-certificates gnupg jq"
+  install_packages "software-properties-common apt-transport-https ca-certificates gnupg jq lsb-release"
 
   # Add Ubuntu universe repo
   add-apt-repository universe -y
 
-  # Add sury repo for PHP 8.4 (force noble codename for compatibility)
+  # Add sury repo for PHP 8.5 (packages.sury.org supports Ubuntu 26.04 / resolute)
   curl -o /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
-  echo "deb https://packages.sury.org/php/ noble main" | tee /etc/apt/sources.list.d/php.list
+  echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list
 }
 
 debian_dep() {
   # Install deps for adding repos
   install_packages "dirmngr ca-certificates apt-transport-https lsb-release"
 
-  # Install PHP 8.4 using sury's repo
+  # Install PHP 8.5 using sury's repo
   curl -o /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg
   echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" | tee /etc/apt/sources.list.d/php.list
 }
@@ -408,9 +353,9 @@ alma_rocky_dep() {
   install_packages "policycoreutils selinux-policy selinux-policy-targeted \
     setroubleshoot-server setools setools-console mcstrans"
 
-  # Add remi repo (php8.4)
+  # Add remi repo (php8.5)
   install_packages "epel-release http://rpms.remirepo.net/enterprise/remi-release-$OS_VER_MAJOR.rpm"
-  dnf module enable -y php:remi-8.4
+  dnf module enable -y php:remi-8.5
 }
 
 panel_deps() {
@@ -427,8 +372,7 @@ panel_deps() {
     update_repos
 
     # Install dependencies
-    install_packages "php8.4 php8.4-{cli,common,gd,intl,sqlite3,mysql,mbstring,bcmath,xml,fpm,curl,zip} \
-      mariadb-common mariadb-server mariadb-client \
+    install_packages "php8.5 php8.5-{cli,common,gd,intl,sqlite3,mbstring,bcmath,xml,fpm,curl,zip} \
       nginx \
       redis-server \
       zip unzip tar \
@@ -440,7 +384,6 @@ panel_deps() {
 
     # Install dependencies
     install_packages "php php-{common,fpm,cli,json,intl,mysqlnd,mcrypt,gd,mbstring,pdo,zip,bcmath,dom,opcache,posix} \
-      mariadb mariadb-server \
       nginx \
       redis \
       zip unzip tar \
@@ -465,7 +408,7 @@ configure_nginx() {
 
   case "$OS" in
   ubuntu | debian)
-    PHP_SOCKET="/run/php/php8.4-fpm.sock"
+    PHP_SOCKET="/run/php/php8.5-fpm.sock"
     CONFIG_PATH_AVAIL="/etc/nginx/sites-available"
     CONFIG_PATH_ENABL="/etc/nginx/sites-enabled"
     ;;
@@ -558,8 +501,6 @@ panel_deps
 install_composer
 panel_dl
 install_composer_deps
-create_db_user "pelican" "$MYSQL_PASSWORD"
-create_db "panel" "pelican"
 configure_env
 insert_cronjob
 pelican_queue_systemd
