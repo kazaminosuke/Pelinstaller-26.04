@@ -90,10 +90,23 @@ install_composer_deps() {
 configure() {
   output "Preparing panel.."
 
-  # Generate the application encryption key so the web installer page can load.
+  # This reproduces the non-interactive initialization that Pelican's
+  # `php artisan p:environment:setup` (AppSettingsCommand) performs, but by
+  # calling each sub-command directly so we never depend on that wrapper. That
+  # command does exactly: copy .env (already handled in ptdl_dl), generate the
+  # APP_KEY, create the storage symlink, and cache Filament components/icons.
   # Database setup, the admin account and Egg imports are intentionally left to
   # the web installer at http://<FQDN>/installer
+
+  # Generate the application encryption key so the panel can boot (--force
+  # answers the production confirmation prompt non-interactively)
   php artisan key:generate --force
+
+  # Create the public/storage -> storage/app/public symlink
+  php artisan storage:link --no-interaction
+
+  # Cache Filament components & icons (admin UI performance)
+  php artisan filament:optimize --no-interaction
 
   success "Panel prepared!"
 }
