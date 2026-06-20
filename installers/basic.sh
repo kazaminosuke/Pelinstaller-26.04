@@ -372,7 +372,7 @@ panel_deps() {
     update_repos
 
     # Install dependencies
-    install_packages "php8.5 php8.5-{cli,common,gd,intl,sqlite3,mbstring,bcmath,xml,fpm,curl,zip} \
+    install_packages "php8.5 php8.5-{cli,common,gd,intl,sqlite3,mysql,mbstring,bcmath,xml,fpm,curl,zip} \
       nginx \
       redis-server \
       zip unzip tar \
