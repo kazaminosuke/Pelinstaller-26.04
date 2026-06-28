@@ -57,6 +57,17 @@ if [[ "${CONFIGURE_LETSENCRYPT}" == true && -z "${email}" ]]; then
   exit 1
 fi
 
+# Panel source: "release" (official, default) or "custom" (GitHub repo + branch).
+# Defaults preserve the existing official-release behaviour.
+PANEL_SOURCE="${PANEL_SOURCE:-release}"
+PANEL_REPO="${PANEL_REPO:-}"
+PANEL_BRANCH="${PANEL_BRANCH:-}"
+
+if [[ "${PANEL_SOURCE}" == "custom" && ( -z "${PANEL_REPO}" || -z "${PANEL_BRANCH}" ) ]]; then
+  error "Custom panel source requires both a repository (owner/repo) and a branch"
+  exit 1
+fi
+
 # --------- Main installation functions -------- #
 
 install_composer() {
@@ -70,8 +81,17 @@ ptdl_dl() {
   mkdir -p /var/www/pelican/storage/framework/cache/data/{9c,9c/a8,8a,8a/69}
   cd /var/www/pelican || exit
 
-  curl -Lo panel.tar.gz "$PANEL_DL_URL"
-  tar -xzvf panel.tar.gz
+  if [ "$PANEL_SOURCE" == "custom" ]; then
+    output "Using custom source: $PANEL_REPO (branch: $PANEL_BRANCH)"
+    curl -Lo panel.tar.gz "https://github.com/${PANEL_REPO}/archive/refs/heads/${PANEL_BRANCH}.tar.gz"
+    # GitHub branch archives wrap everything in a {repo}-{branch}/ top-level
+    # folder, so strip it to land the files directly in /var/www/pelican
+    tar -xzf panel.tar.gz --strip-components=1
+  else
+    curl -Lo panel.tar.gz "$PANEL_DL_URL"
+    tar -xzvf panel.tar.gz
+  fi
+
   chmod -R 755 storage/* bootstrap/cache/
 
   cp .env.example .env
@@ -84,6 +104,43 @@ install_composer_deps() {
   [ "$OS" == "rocky" ] || [ "$OS" == "almalinux" ] && export PATH=/usr/local/bin:$PATH
   COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader
   success "Installed composer dependencies!"
+}
+
+install_nodejs() {
+  command -v node >/dev/null 2>&1 && return 0
+
+  output "Installing Node.js (needed to build frontend assets).."
+  case "$OS" in
+  ubuntu | debian)
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+    install_packages "nodejs"
+    ;;
+  rocky | almalinux)
+    curl -fsSL https://rpm.nodesource.com/setup_22.x | bash -
+    install_packages "nodejs"
+    ;;
+  esac
+}
+
+# Official releases ship the compiled frontend in public/build. Raw branch
+# archives usually don't, so build the assets (vite) only when they're missing.
+build_frontend() {
+  cd /var/www/pelican || exit
+
+  if [ -d public/build ] && [ -n "$(ls -A public/build 2>/dev/null)" ]; then
+    output "Compiled frontend assets already present, skipping build."
+    return 0
+  fi
+
+  output "Compiled frontend assets not found, building them (this can take a while).."
+
+  install_nodejs
+
+  # package.json exposes "build" (vite build) which outputs to public/build
+  npm install
+  npm run build
+
+  success "Frontend assets built!"
 }
 
 # Prepare the panel so the web installer can run
@@ -367,6 +424,7 @@ perform_install() {
   install_composer
   ptdl_dl
   install_composer_deps
+  build_frontend
   configure
   insert_cronjob
   install_pelican_queue

@@ -42,6 +42,11 @@ fi
 # Domain name / IP
 export FQDN=""
 
+# Panel source: "release" (official, default) or "custom" (GitHub repo + branch)
+export PANEL_SOURCE="release"
+export PANEL_REPO=""
+export PANEL_BRANCH=""
+
 # Email (only used for Let's Encrypt)
 export email=""
 
@@ -53,6 +58,18 @@ export CONFIGURE_LETSENCRYPT=false
 export CONFIGURE_FIREWALL=false
 
 # ------------ User input functions ------------ #
+
+ask_panel_source() {
+  output "By default the latest official Pelican release is installed."
+  echo -e -n "* Install the Panel from a custom GitHub repo + branch instead (for testing)? (y/N): "
+  read -r CONFIRM_CUSTOM_SOURCE
+
+  if [[ "$CONFIRM_CUSTOM_SOURCE" =~ [Yy] ]]; then
+    PANEL_SOURCE="custom"
+    required_input PANEL_REPO "GitHub owner/repo (e.g. kazaminosuke/pelican-dev-panel): " "Repository (owner/repo) cannot be empty"
+    required_input PANEL_BRANCH "Branch name (e.g. fix-plugin-install-stale-sushi): " "Branch cannot be empty"
+  fi
+}
 
 ask_letsencrypt() {
   if [ "$CONFIGURE_UFW" == false ] && [ "$CONFIGURE_FIREWALL_CMD" == false ]; then
@@ -107,6 +124,9 @@ main() {
   # The database, admin account and Eggs are configured later through the web
   # installer, so the CLI only needs the details required to deploy the panel.
 
+  # Choose where the Panel source is fetched from (official release vs custom branch)
+  ask_panel_source
+
   print_brake 72
 
   # set FQDN
@@ -155,6 +175,11 @@ main() {
 summary() {
   print_brake 62
   output "Pelican panel $PELICAN_PANEL_VERSION with nginx on $OS"
+  if [ "$PANEL_SOURCE" == "custom" ]; then
+    output "Panel source: $PANEL_REPO @ $PANEL_BRANCH (custom branch)"
+  else
+    output "Panel source: official release"
+  fi
   output "Hostname/FQDN: $FQDN"
   output "Configure Firewall? $CONFIGURE_FIREWALL"
   output "Configure Let's Encrypt? $CONFIGURE_LETSENCRYPT"
