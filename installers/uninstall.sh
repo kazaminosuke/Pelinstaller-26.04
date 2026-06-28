@@ -99,7 +99,58 @@ rm_cron() {
   success "Removed cron jobs."
 }
 
-rm_database() {
+# Database details captured from the panel .env *before* any files are removed
+# (rm_panel_files deletes /var/www/pelican, including the .env and any in-tree
+# SQLite file, so we must read it up-front).
+DB_CONNECTION=""
+DB_DATABASE_VALUE=""
+
+# Read a single KEY=value from an env file, trimming whitespace and quotes.
+read_env_value() {
+  local key="$1" file="$2" line value
+  line=$(grep -E "^${key}=" "$file" 2>/dev/null | tail -n1 || true)
+  value="${line#*=}"
+  # strip surrounding whitespace
+  value="${value#"${value%%[![:space:]]*}"}"
+  value="${value%"${value##*[![:space:]]}"}"
+  # strip a single pair of surrounding quotes
+  value="${value%\"}"; value="${value#\"}"
+  value="${value%\'}"; value="${value#\'}"
+  printf '%s' "$value"
+}
+
+detect_database() {
+  local env_file="/var/www/pelican/.env"
+  if [ ! -f "$env_file" ]; then
+    warning "Panel .env not found ($env_file); cannot determine the database type."
+    return 0
+  fi
+  DB_CONNECTION=$(read_env_value "DB_CONNECTION" "$env_file")
+  DB_DATABASE_VALUE=$(read_env_value "DB_DATABASE" "$env_file")
+}
+
+rm_database_sqlite() {
+  output "Removing SQLite database..."
+
+  local sqlite_file="$DB_DATABASE_VALUE"
+  [ -z "$sqlite_file" ] && sqlite_file="/var/www/pelican/database/database.sqlite"
+
+  if [ -f "$sqlite_file" ]; then
+    rm -f "$sqlite_file"
+    success "Removed SQLite database file ($sqlite_file)."
+  else
+    # In a default install the file lives under /var/www/pelican and is already
+    # gone after rm_panel_files removed the directory tree.
+    output "SQLite database file not found ($sqlite_file); removed together with the panel files."
+  fi
+}
+
+rm_database_mysql() {
+  if ! command -v mariadb >/dev/null 2>&1; then
+    warning "mariadb client not found; skipping MySQL/MariaDB removal. Drop the database and user manually."
+    return 0
+  fi
+
   output "Removing database..."
   valid_db=$(mariadb -u root -e "SELECT schema_name FROM information_schema.schemata;" | grep -v -E -- 'schema_name|information_schema|performance_schema|mysql')
   warning "Be careful! This database will be deleted!"
@@ -153,9 +204,64 @@ rm_database() {
   success "Removed database and database user."
 }
 
+rm_database_pgsql() {
+  if ! command -v psql >/dev/null 2>&1; then
+    warning "psql client not found; skipping PostgreSQL removal. Drop the database and user manually."
+    return 0
+  fi
+
+  output "Removing PostgreSQL database..."
+  warning "Be careful! The selected database and user will be deleted!"
+
+  local default_db="$DB_DATABASE_VALUE"
+  [ -z "$default_db" ] && default_db="panel"
+
+  echo -n "* Panel database name to drop (default: $default_db, leave empty to skip): "
+  read -r pg_db
+  [ -z "$pg_db" ] && pg_db="$default_db"
+
+  if [[ -n "$pg_db" ]]; then
+    sudo -u postgres psql -c "DROP DATABASE IF EXISTS \"$pg_db\";" || warning "Failed to drop database $pg_db"
+  fi
+
+  echo -n "* Panel database user to drop (default: pelican, leave empty to skip): "
+  read -r pg_user
+  [ -z "$pg_user" ] && pg_user="pelican"
+
+  if [[ -n "$pg_user" ]]; then
+    sudo -u postgres psql -c "DROP ROLE IF EXISTS \"$pg_user\";" || warning "Failed to drop role $pg_user"
+  fi
+
+  success "Removed PostgreSQL database and user."
+}
+
+rm_database() {
+  case "$DB_CONNECTION" in
+  sqlite)
+    rm_database_sqlite
+    ;;
+  mysql | mariadb)
+    rm_database_mysql
+    ;;
+  pgsql)
+    rm_database_pgsql
+    ;;
+  "")
+    warning "Could not determine the database type (.env missing or unreadable)."
+    warning "Skipping database removal. If you used MySQL/MariaDB/PostgreSQL, drop the database and user manually."
+    ;;
+  *)
+    warning "Unknown DB_CONNECTION '$DB_CONNECTION'; skipping automatic database removal."
+    ;;
+  esac
+}
+
 # --------------- Main functions --------------- #
 
 perform_uninstall() {
+  # Read DB details from .env first; rm_panel_files removes /var/www/pelican
+  # (including the .env and any in-tree SQLite database) before rm_database runs.
+  [ "$RM_PANEL" == true ] && detect_database
   [ "$RM_PANEL" == true ] && rm_panel_files
   [ "$RM_PANEL" == true ] && rm_cron
   [ "$RM_PANEL" == true ] && rm_database
