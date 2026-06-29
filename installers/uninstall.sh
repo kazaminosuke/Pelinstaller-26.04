@@ -47,18 +47,21 @@ RM_WINGS="${RM_WINGS:-true}"
 rm_panel_files() {
   output "Removing panel files..."
   rm -rf /var/www/pelican /usr/local/bin/composer
-  [ "$OS" != "centos" ] && unlink /etc/nginx/sites-enabled/pelican.conf
+  # These cleanup steps are best-effort: the targets may already be gone (e.g. a
+  # partial earlier run), so never let set -e abort the rest of the uninstall.
+  [ "$OS" != "centos" ] && unlink /etc/nginx/sites-enabled/pelican.conf 2>/dev/null || true
   [ "$OS" != "centos" ] && rm -f /etc/nginx/sites-available/pelican.conf
-  [ "$OS" != "centos" ] && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
+  [ "$OS" != "centos" ] && ln -s /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default 2>/dev/null || true
   [ "$OS" == "centos" ] && rm -f /etc/nginx/conf.d/pelican.conf
-  systemctl restart nginx
+  systemctl restart nginx || true
   success "Removed panel files."
 }
 
 rm_docker_containers() {
   output "Removing docker containers and images..."
 
-  docker system prune -a -f
+  # Docker may not be installed; don't abort the uninstall if the command fails.
+  docker system prune -a -f || true
 
   success "Removed docker containers and images."
 }
@@ -66,9 +69,10 @@ rm_docker_containers() {
 rm_wings_files() {
   output "Removing wings files..."
 
-  # stop and remove wings service
-  systemctl disable --now wings
+  # stop and remove wings service (best-effort; may already be stopped/removed)
+  systemctl disable --now wings || true
   rm -rf /etc/systemd/system/wings.service
+  systemctl daemon-reload || true
 
   rm -rf /etc/pelican /usr/local/bin/wings /var/lib/pelican
   success "Removed wings files."
@@ -76,20 +80,26 @@ rm_wings_files() {
 
 rm_services() {
   output "Removing services..."
-  systemctl disable --now pelican-queue
+  # Every systemctl call here is best-effort: units may be absent (e.g. pteroq is
+  # a Pterodactyl leftover that never exists on Pelican, or a service was already
+  # disabled by a previous partial run). Guard them so set -e can't abort before
+  # the rest of the uninstall (notably the Wings teardown) runs.
+  systemctl disable --now pelican-queue || true
   rm -rf /etc/systemd/system/pelican-queue.service
-  systemctl disable --now pteroq
+  systemctl disable --now pteroq || true
   rm -rf /etc/systemd/system/pteroq.service
   case "$OS" in
   ubuntu | debian)
-    systemctl disable --now redis-server
+    systemctl disable --now redis-server || true
     ;;
   centos)
-    systemctl disable --now redis
-    systemctl disable --now php-fpm
+    systemctl disable --now redis || true
+    systemctl disable --now php-fpm || true
     rm -rf /etc/php-fpm.d/www-pelican.conf
     ;;
   esac
+  # Reload systemd so the removed units don't linger as stale/failed entries.
+  systemctl daemon-reload || true
   success "Removed services."
 }
 
