@@ -68,6 +68,11 @@ if [[ "${PANEL_SOURCE}" == "custom" && ( -z "${PANEL_REPO}" || -z "${PANEL_BRANC
   exit 1
 fi
 
+# Panel language written to APP_LOCALE in .env. Chosen interactively from the
+# languages bundled with the downloaded source (see ask_language); defaults to
+# "en" so the existing non-interactive behaviour is preserved.
+APP_LOCALE="${APP_LOCALE:-en}"
+
 # --------- Main installation functions -------- #
 
 install_composer() {
@@ -143,9 +148,53 @@ build_frontend() {
   success "Frontend assets built!"
 }
 
+# Ask which language the panel should use (APP_LOCALE). The list is built from
+# the lang/ directory of the downloaded source so it tracks whatever languages
+# the panel currently ships, with no list to maintain here.
+ask_language() {
+  cd /var/www/pelican || exit
+
+  local langs=() d
+  for d in lang/*/; do
+    [ -d "$d" ] || continue
+    d="${d#lang/}"
+    langs+=("${d%/}")
+  done
+
+  # If enumeration fails for any reason, keep the default and continue.
+  if [ "${#langs[@]}" -eq 0 ]; then
+    warning "Could not enumerate languages from lang/; keeping default APP_LOCALE=$APP_LOCALE"
+    return 0
+  fi
+
+  output "Available panel languages: ${langs[*]}"
+
+  local choice=""
+  while true; do
+    echo -n "* Select panel language (APP_LOCALE) [default: en, press enter to skip]: "
+    read -r choice || choice=""
+    # Default / skip -> keep "en" (preserves existing behaviour)
+    [ -z "$choice" ] && { APP_LOCALE="en"; break; }
+    if array_contains_element "$choice" "${langs[@]}"; then
+      APP_LOCALE="$choice"
+      break
+    fi
+    error "Invalid language: $choice"
+  done
+
+  output "Panel language set to: $APP_LOCALE"
+}
+
 # Prepare the panel so the web installer can run
 configure() {
   output "Preparing panel.."
+
+  # Apply the chosen panel language to .env (replace existing key or append)
+  if grep -qE '^APP_LOCALE=' .env; then
+    sed -i "s|^APP_LOCALE=.*|APP_LOCALE=${APP_LOCALE}|" .env
+  else
+    echo "APP_LOCALE=${APP_LOCALE}" >>.env
+  fi
 
   # This reproduces the non-interactive initialization that Pelican's
   # `php artisan p:environment:setup` (AppSettingsCommand) performs, but by
@@ -423,6 +472,7 @@ perform_install() {
   dep_install
   install_composer
   ptdl_dl
+  ask_language
   install_composer_deps
   build_frontend
   configure
