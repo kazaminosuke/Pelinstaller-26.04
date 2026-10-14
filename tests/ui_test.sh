@@ -167,6 +167,19 @@ expect "required_input re-asks until non-empty" "Name cannot be empty" "=[value]
 OUT="$( { printf 'nope\nuser@example.com\n' | { email_input V "Email: " "Email invalid"; echo "=[$V]"; }; } 2>&1)"
 expect "email_input re-asks on invalid address" "Email invalid" "=[user@example.com]"
 
+for a in y Y yes; do
+  confirm "Q?" <<<"$a" >/dev/null && pass "confirm accepts '$a'" || fail "confirm accepts '$a'"
+done
+for a in "" n N no; do
+  confirm "Q?" <<<"$a" >/dev/null && fail "confirm rejects '$a'" || pass "confirm rejects '$a'"
+done
+
+OUT="$( { print_kv "Label" "value"; print_status true "Panel" "/var/www/pelican"; print_status false "Wings"; } | strip_ansi)"
+expect "summary/status rows render" "Label" "value" "✔ Panel" "✖ Wings"
+
+OUT="$(NO_COLOR=1 bash -c 'source "$0"; success ok; print_section Title; print_menu_item 0 Item Desc' "$REPO/lib/lib.sh" 2>&1)"
+if grep -q $'\x1b\[' <<<"$OUT"; then fail "NO_COLOR removes all colour codes"; else pass "NO_COLOR removes all colour codes"; fi
+
 echo ""
 echo "passed: $PASS  failed: $FAIL"
 [ "$FAIL" -eq 0 ]

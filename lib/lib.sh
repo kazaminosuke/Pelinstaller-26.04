@@ -55,11 +55,21 @@ export WINGS_DL_BASE_URL="https://github.com/pelican-dev/wings/releases/latest/d
 export GITHUB_BASE_URL=${GITHUB_BASE_URL:-"https://raw.githubusercontent.com/kazaminosuke/Pelinstaller-26.04"}
 export GITHUB_URL="$GITHUB_BASE_URL/$GITHUB_SOURCE"
 
-# Colors
-COLOR_YELLOW='\033[1;33m'
-COLOR_GREEN='\033[0;32m'
-COLOR_RED='\033[0;31m'
-COLOR_NC='\033[0m'
+# Colors (set NO_COLOR=1 to disable, see https://no-color.org)
+if [ -z "${NO_COLOR:-}" ]; then
+  COLOR_YELLOW='\033[1;33m'
+  COLOR_GREEN='\033[0;32m'
+  COLOR_RED='\033[0;31m'
+  COLOR_BLUE='\033[1;34m'
+  COLOR_CYAN='\033[0;36m'
+  COLOR_GRAY='\033[0;90m'
+  COLOR_BOLD='\033[1m'
+  COLOR_NC='\033[0m'
+else
+  COLOR_YELLOW='' COLOR_GREEN='' COLOR_RED='' COLOR_BLUE='' COLOR_CYAN='' COLOR_GRAY='' COLOR_BOLD='' COLOR_NC=''
+fi
+# Accent colour used for headers, menu numbers and labels
+COLOR_ACCENT="$COLOR_CYAN"
 
 # email input validation regex
 email_regex="^(([A-Za-z0-9]+((\.|\-|\_|\+)?[A-Za-z0-9]?)*[A-Za-z0-9]+)|[A-Za-z0-9]+)@(([A-Za-z0-9]+)+((\.|\-|\_)?([A-Za-z0-9]+)+)*)+\.([A-Za-z]{2,})+$"
@@ -74,6 +84,11 @@ lib_loaded() {
 }
 
 # -------------- Visual functions -------------- #
+#
+# Shared UI components. Every screen (install.sh, ui/*.sh, installers/*.sh)
+# uses these so that headers, messages, summaries and prompts look the same.
+
+UI_WIDTH=70
 
 output() {
   echo -e "* $1"
@@ -81,28 +96,75 @@ output() {
 
 success() {
   echo ""
-  output "${COLOR_GREEN}SUCCESS${COLOR_NC}: $1"
+  output "${COLOR_GREEN}✔ SUCCESS${COLOR_NC}: $1"
   echo ""
 }
 
 error() {
   echo ""
-  echo -e "* ${COLOR_RED}ERROR${COLOR_NC}: $1" 1>&2
+  echo -e "* ${COLOR_RED}✖ ERROR${COLOR_NC}: $1" 1>&2
   echo ""
 }
 
 warning() {
   echo ""
-  output "${COLOR_YELLOW}WARNING${COLOR_NC}: $1"
+  output "${COLOR_YELLOW}⚠ WARNING${COLOR_NC}: $1"
   echo ""
 }
 
+info() {
+  output "${COLOR_BLUE}ℹ${COLOR_NC} $1"
+}
+
+# print_brake <width> [char] : horizontal rule
 print_brake() {
+  local char="${2:-─}" n
   for ((n = 0; n < $1; n++)); do
-    echo -n "#"
+    echo -n "$char"
   done
   echo ""
-} 
+}
+
+# print_section <title> : titled rule that separates the steps of a screen
+print_section() {
+  echo ""
+  echo -e "${COLOR_ACCENT}── ${COLOR_BOLD}$1${COLOR_NC} ${COLOR_ACCENT}$(print_brake $((UI_WIDTH - ${#1} - 4)))${COLOR_NC}"
+}
+
+# print_kv <label> <value> : aligned "label : value" row for summaries
+print_kv() {
+  printf "*   ${COLOR_ACCENT}%-24s${COLOR_NC} %b\n" "$1" "$2"
+}
+
+# print_status <true|false> <label> [detail] : ✔/✖ row for detected components
+print_status() {
+  if [ "$1" == true ]; then
+    echo -e "*   ${COLOR_GREEN}✔${COLOR_NC} $2${3:+ ${COLOR_GRAY}($3)${COLOR_NC}}"
+  else
+    echo -e "*   ${COLOR_GRAY}✖ $2${3:+ ($3)}${COLOR_NC}"
+  fi
+}
+
+# print_menu_item <index> <title> [description]
+print_menu_item() {
+  echo -e "*   ${COLOR_ACCENT}[$1]${COLOR_NC} ${COLOR_BOLD}$2${COLOR_NC}"
+  [ -n "${3:-}" ] && echo -e "*       ${COLOR_GRAY}$3${COLOR_NC}"
+  return 0
+}
+
+# print_note <text> : highlighted note line
+print_note() {
+  echo -e "* ${COLOR_RED}Note${COLOR_NC}: $1"
+}
+
+# confirm <question> : asks a (y/N) question; succeeds when the answer
+# contains y/Y, which is how every prompt of this script has always behaved.
+confirm() {
+  local answer
+  echo -e -n "* ${COLOR_YELLOW}?${COLOR_NC} $1 (y/N): "
+  read -r answer
+  [[ "$answer" =~ [Yy] ]]
+}
 
 print_list() {
   print_brake 30
@@ -121,7 +183,10 @@ hyperlink() {
 welcome() {
   get_latest_versions
 
-  print_brake 70
+  echo ""
+  echo -e "${COLOR_ACCENT}$(print_brake $UI_WIDTH ═)${COLOR_NC}"
+  echo -e "  ${COLOR_BOLD}${COLOR_ACCENT}Pelinstaller${COLOR_NC}  ${COLOR_GRAY}│${COLOR_NC}  Pelican Panel & Wings installer  ${COLOR_GRAY}│${COLOR_NC}  @ $SCRIPT_RELEASE"
+  echo -e "${COLOR_ACCENT}$(print_brake $UI_WIDTH ═)${COLOR_NC}"
   output "Pelican Panel installation script @ $SCRIPT_RELEASE"
   output ""
   output "Copyright (C) 2018 - 2024, Vilhelm Prytz, <vilhelm@prytznet.se>"
@@ -129,14 +194,14 @@ welcome() {
   output "https://github.com/ratx0x0/Pelinstaller-26.04"
   output ""
   output "This script is not associated with the official Pelican Project."
-  output ""
-  output "Running $OS version $OS_VER."
+  print_brake $UI_WIDTH
+  print_kv "Operating system" "$OS $OS_VER ($CPU_ARCHITECTURE)"
   if [ "$1" == "panel" ]; then
-    output "Latest pelican-dev/panel is $PELICAN_PANEL_VERSION"
+    print_kv "Latest pelican-dev/panel" "$PELICAN_PANEL_VERSION"
   elif [ "$1" == "wings" ]; then
-    output "Latest pelican-dev/wings is $PELICAN_WINGS_VERSION"
+    print_kv "Latest pelican-dev/wings" "$PELICAN_WINGS_VERSION"
   fi
-  print_brake 70
+  print_brake $UI_WIDTH
 }
 
 # ---------------- Lib functions --------------- #
