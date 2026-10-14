@@ -109,7 +109,7 @@ rm -rf /etc/pelican
 # ------------------------------------------------------------------ #
 run_menu "0\nn\n\npanel.test\nn\nn\n"
 expect "panel: empty FQDN rejected, summary shown, abort honoured" \
-  "FQDN cannot be empty" "panel.test" "official release" "Installation aborted"
+  "FQDN cannot be empty" "Hostname/FQDN" "panel.test" "official release" "Installation aborted"
 reject "panel: nothing installed after abort" "Base installation complete"
 
 run_menu "0\ny\n\nowner/repo\n\nmy-branch\npanel.test\nn\nn\n"
@@ -125,7 +125,7 @@ rm -rf /var/www/pelican
 # Wings screen (option 1)
 # ------------------------------------------------------------------ #
 run_menu "1\nn\nn\nn\nn\n"
-expect "wings: defaults then abort" "Wings" "Installation aborted"
+expect "wings: defaults then abort" "Wings" "Configure database host?" "Installation aborted"
 
 run_menu "1\nn\ny\nn\nbad-name\n\n\nsecret\nn\nn\n"
 expect "wings: db user hyphen rejected, empty password rejected" \

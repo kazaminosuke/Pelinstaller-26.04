@@ -61,10 +61,7 @@ export CONFIGURE_FIREWALL=false
 
 ask_panel_source() {
   output "By default the latest official Pelican release is installed."
-  echo -e -n "* Install the Panel from a custom GitHub repo + branch instead (for testing)? (y/N): "
-  read -r CONFIRM_CUSTOM_SOURCE
-
-  if [[ "$CONFIRM_CUSTOM_SOURCE" =~ [Yy] ]]; then
+  if confirm "Install the Panel from a custom GitHub repo + branch instead (for testing)?"; then
     PANEL_SOURCE="custom"
     required_input PANEL_REPO "GitHub owner/repo (e.g. kazaminosuke/pelican-dev-panel): " "Repository (owner/repo) cannot be empty"
     required_input PANEL_BRANCH "Branch name (e.g. fix-plugin-install-stale-sushi): " "Branch cannot be empty"
@@ -76,10 +73,7 @@ ask_letsencrypt() {
     warning "Let's Encrypt requires port 80/443 to be opened! You have opted out of the automatic firewall configuration; use this at your own risk (if port 80/443 is closed, the script will fail)!"
   fi
 
-  echo -e -n "* Do you want to automatically configure HTTPS using Let's Encrypt? (y/N): "
-  read -r CONFIRM_SSL
-
-  if [[ "$CONFIRM_SSL" =~ [Yy] ]]; then
+  if confirm "Do you want to automatically configure HTTPS using Let's Encrypt?"; then
     CONFIGURE_LETSENCRYPT=true
     ASSUME_SSL=false
   fi
@@ -89,10 +83,7 @@ ask_assume_ssl() {
   output "Let's Encrypt is not going to be automatically configured by this script (user opted out)."
   output "You can 'assume' Let's Encrypt, which means the script will download a nginx configuration that is configured to use a Let's Encrypt certificate but the script won't obtain the certificate for you."
   output "If you assume SSL and do not obtain the certificate, your installation will not work."
-  echo -n "* Assume SSL or not? (y/N): "
-  read -r ASSUME_SSL_INPUT
-
-  [[ "$ASSUME_SSL_INPUT" =~ [Yy] ]] && ASSUME_SSL=true
+  confirm "Assume SSL or not?" && ASSUME_SSL=true
   true
 }
 
@@ -109,9 +100,7 @@ main() {
   # check if we can detect an already existing installation
   if [ -d "/var/www/pelican" ]; then
     warning "The script has detected that you already have Pelican panel on your system! You cannot run the script multiple times, it will fail!"
-    echo -e -n "* Are you sure you want to proceed? (y/N): "
-    read -r CONFIRM_PROCEED
-    if [[ ! "$CONFIRM_PROCEED" =~ [Yy] ]]; then
+    if ! confirm "Are you sure you want to proceed?"; then
       error "Installation aborted!"
       exit 1
     fi
@@ -127,7 +116,7 @@ main() {
   # Choose where the Panel source is fetched from (official release vs custom branch)
   ask_panel_source
 
-  print_brake 72
+  print_section "Panel configuration"
 
   # set FQDN
   while [ -z "$FQDN" ]; do
@@ -162,9 +151,8 @@ main() {
   summary
 
   # confirm installation
-  echo -e -n "\n* Initial configuration completed. Continue with installation? (y/N): "
-  read -r CONFIRM
-  if [[ "$CONFIRM" =~ [Yy] ]]; then
+  echo ""
+  if confirm "Initial configuration completed. Continue with installation?"; then
     run_installer "panel"
   else
     error "Installation aborted."
@@ -173,17 +161,17 @@ main() {
 }
 
 summary() {
-  print_brake 62
+  print_section "Summary"
   output "Pelican panel $PELICAN_PANEL_VERSION with nginx on $OS"
   if [ "$PANEL_SOURCE" == "custom" ]; then
-    output "Panel source: $PANEL_REPO @ $PANEL_BRANCH (custom branch)"
+    print_kv "Panel source" "$PANEL_REPO @ $PANEL_BRANCH (custom branch)"
   else
-    output "Panel source: official release"
+    print_kv "Panel source" "official release"
   fi
-  output "Hostname/FQDN: $FQDN"
-  output "Configure Firewall? $CONFIGURE_FIREWALL"
-  output "Configure Let's Encrypt? $CONFIGURE_LETSENCRYPT"
-  output "Assume SSL? $ASSUME_SSL"
+  print_kv "Hostname/FQDN" "$FQDN"
+  print_kv "Configure Firewall?" "$CONFIGURE_FIREWALL"
+  print_kv "Configure Let's Encrypt?" "$CONFIGURE_LETSENCRYPT"
+  print_kv "Assume SSL?" "$ASSUME_SSL"
   output ""
   output "Database, admin account and Eggs are configured afterwards"
   output "through the web installer at http://$FQDN/installer"
@@ -194,8 +182,8 @@ goodbye() {
   local scheme="http"
   { [ "$ASSUME_SSL" == true ] || [ "$CONFIGURE_LETSENCRYPT" == true ]; } && scheme="https"
 
-  print_brake 62
-  output "Panel installation completed"
+  print_section "Done"
+  success "Panel installation completed"
   output ""
 
   output "To finish the setup, open the web installer in your browser and"
@@ -208,7 +196,7 @@ goodbye() {
 
   output "Installation is using nginx on $OS"
   output "Thank you for using this script."
-  [ "$CONFIGURE_FIREWALL" == false ] && echo -e "* ${COLOR_RED}Note${COLOR_NC}: If you haven't configured the firewall: 80/443 (HTTP/HTTPS) is required to be open!"
+  [ "$CONFIGURE_FIREWALL" == false ] && print_note "If you haven't configured the firewall: 80/443 (HTTP/HTTPS) is required to be open!"
   print_brake 62
 }
 

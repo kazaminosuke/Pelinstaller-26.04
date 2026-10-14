@@ -51,9 +51,7 @@ main() {
   # check if we can detect an already existing installation
   if [ -d "/var/www/pelican" ]; then
     warning "The script has detected that you already have Pelican panel on your system! You cannot run the script multiple times, it will fail!"
-    echo -e -n "* Are you sure you want to proceed? (y/N): "
-    read -r CONFIRM_PROCEED
-    if [[ ! "$CONFIRM_PROCEED" =~ [Yy] ]]; then
+    if ! confirm "Are you sure you want to proceed?"; then
       error "Installation aborted!"
       exit 1
     fi
@@ -64,9 +62,8 @@ main() {
   summary
 
   # confirm installation
-  echo -e -n "\n* Initial configuration completed. Continue with installation? (y/N): "
-  read -r CONFIRM
-  if [[ "$CONFIRM" =~ [Yy] ]]; then
+  echo ""
+  if confirm "Initial configuration completed. Continue with installation?"; then
     run_installer "basic"
   else
     error "Installation aborted."
@@ -75,11 +72,11 @@ main() {
 }
 
 summary() {
-  print_brake 62
+  print_section "Summary"
   output "Pelican Panel installed successfully!"
-  output "Panel URL: http://$IP_ADDRESS"
-  output "Username: admin"
-  output "Password: $USER_PASSWORD"
+  print_kv "Panel URL" "http://$IP_ADDRESS"
+  print_kv "Username" "admin"
+  print_kv "Password" "$USER_PASSWORD"
   print_brake 62
 }
 

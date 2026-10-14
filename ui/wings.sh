@@ -66,29 +66,20 @@ ask_letsencrypt() {
 
   warning "You cannot use Let's Encrypt with your hostname as an IP address! It must be a FQDN (e.g. node.example.org)."
 
-  echo -e -n "* Do you want to automatically configure HTTPS using Let's Encrypt? (y/N): "
-  read -r CONFIRM_SSL
-
-  if [[ "$CONFIRM_SSL" =~ [Yy] ]]; then
+  if confirm "Do you want to automatically configure HTTPS using Let's Encrypt?"; then
     CONFIGURE_LETSENCRYPT=true
   fi
 }
 
 ask_database_user() {
-  echo -n "* Do you want to automatically configure a user for database hosts? (y/N): "
-  read -r CONFIRM_DBHOST
-
-  if [[ "$CONFIRM_DBHOST" =~ [Yy] ]]; then
+  if confirm "Do you want to automatically configure a user for database hosts?"; then
     ask_database_external
     CONFIGURE_DBHOST=true
   fi
 }
 
 ask_database_external() {
-  echo -n "* Do you want to configure MySQL to be accessed externally? (y/N): "
-  read -r CONFIRM_DBEXTERNAL
-
-  if [[ "$CONFIRM_DBEXTERNAL" =~ [Yy] ]]; then
+  if confirm "Do you want to configure MySQL to be accessed externally?"; then
     echo -n "* Enter the panel address (blank for any address): "
     read -r CONFIRM_DBEXTERNAL_HOST
     if [ "$CONFIRM_DBEXTERNAL_HOST" == "" ]; then
@@ -103,9 +94,7 @@ ask_database_external() {
 
 ask_database_firewall() {
   warning "Allow incoming traffic to port 3306 (MySQL) can potentially be a security risk, unless you know what you are doing!"
-  echo -n "* Would you like to allow incoming traffic to port 3306? (y/N): "
-  read -r CONFIRM_DB_FIREWALL
-  if [[ "$CONFIRM_DB_FIREWALL" =~ [Yy] ]]; then
+  if confirm "Would you like to allow incoming traffic to port 3306?"; then
     CONFIGURE_DB_FIREWALL=true
   fi
 }
@@ -118,9 +107,7 @@ main() {
   # Check if we can detect an already existing installation
   if [ -d "/etc/pelican" ]; then
     warning "The script has detected that you already have Pelican wings on your system! You cannot run the script multiple times, it will fail!"
-    echo -e -n "* Are you sure you want to proceed? (y/N): "
-    read -r CONFIRM_PROCEED
-    if [[ ! "$CONFIRM_PROCEED" =~ [Yy] ]]; then
+    if ! confirm "Are you sure you want to proceed?"; then
       error "Installation aborted!"
       exit 1
     fi
@@ -137,9 +124,9 @@ main() {
   echo "* the installation has finished. Read more about this process on the"
   echo "* official documentation: $(hyperlink 'https://pelican.dev/docs/wings/install#configure')"
   echo "* "
-  echo -e "* ${COLOR_RED}Note${COLOR_NC}: this script will not start Wings automatically (will install systemd service, not start it)."
-  echo -e "* ${COLOR_RED}Note${COLOR_NC}: this script will not enable swap (for docker)."
-  print_brake 42
+  print_note "this script will not start Wings automatically (will install systemd service, not start it)."
+  print_note "this script will not enable swap (for docker)."
+  print_section "Wings configuration"
 
   ask_firewall CONFIGURE_FIREWALL
 
@@ -195,10 +182,16 @@ main() {
     done
   fi
 
-  echo -n "* Proceed with installation? (y/N): "
-
-  read -r CONFIRM
-  if [[ "$CONFIRM" =~ [Yy] ]]; then
+  print_section "Summary"
+  print_kv "Configure Firewall?" "$CONFIGURE_FIREWALL"
+  print_kv "Configure database host?" "$CONFIGURE_DBHOST"
+  if [ "$CONFIGURE_DBHOST" == true ]; then
+    print_kv "Database host user" "$MYSQL_DBHOST_USER@$MYSQL_DBHOST_HOST"
+  fi
+  [ "$CONFIGURE_LETSENCRYPT" == true ] && print_kv "Let's Encrypt FQDN" "$FQDN"
+  print_kv "Configure Let's Encrypt?" "$CONFIGURE_LETSENCRYPT"
+  echo ""
+  if confirm "Proceed with installation?"; then
     run_installer "wings"
   else
     error "Installation aborted."
@@ -207,9 +200,8 @@ main() {
 }
 
 function goodbye {
-  echo ""
-  print_brake 70
-  echo "* Wings installation completed"
+  print_section "Done"
+  success "Wings installation completed"
   echo "*"
   echo "* To continue, you need to configure Wings to run with your panel"
   echo "* Please refer to the official guide, $(hyperlink 'https://pelican.dev/docs/wings/install#configure')"
@@ -225,8 +217,8 @@ function goodbye {
   echo "*"
   echo "* systemctl start wings"
   echo "*"
-  echo -e "* ${COLOR_RED}Note${COLOR_NC}: It is recommended to enable swap (for Docker, read more about it in official documentation)."
-  [ "$CONFIGURE_FIREWALL" == false ] && echo -e "* ${COLOR_RED}Note${COLOR_NC}: If you haven't configured your firewall, ports 8080 and 2022 needs to be open."
+  print_note "It is recommended to enable swap (for Docker, read more about it in official documentation)."
+  [ "$CONFIGURE_FIREWALL" == false ] && print_note "If you haven't configured your firewall, ports 8080 and 2022 needs to be open."
   print_brake 70
   echo ""
 }

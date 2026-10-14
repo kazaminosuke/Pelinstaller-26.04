@@ -187,8 +187,6 @@ welcome() {
   echo -e "${COLOR_ACCENT}$(print_brake $UI_WIDTH ═)${COLOR_NC}"
   echo -e "  ${COLOR_BOLD}${COLOR_ACCENT}Pelinstaller${COLOR_NC}  ${COLOR_GRAY}│${COLOR_NC}  Pelican Panel & Wings installer  ${COLOR_GRAY}│${COLOR_NC}  @ $SCRIPT_RELEASE"
   echo -e "${COLOR_ACCENT}$(print_brake $UI_WIDTH ═)${COLOR_NC}"
-  output "Pelican Panel installation script @ $SCRIPT_RELEASE"
-  output ""
   output "Copyright (C) 2018 - 2024, Vilhelm Prytz, <vilhelm@prytznet.se>"
   output "Copyright (C) 2021 - 2024, Matthew Jacob, <git@matthew.network>"
   output "https://github.com/ratx0x0/Pelinstaller-26.04"
@@ -415,18 +413,12 @@ ask_firewall() {
 
   case "$OS" in
   ubuntu | debian)
-    echo -e -n "* Do you want to automatically configure UFW (firewall)? (y/N): "
-    read -r CONFIRM_UFW
-
-    if [[ "$CONFIRM_UFW" =~ [Yy] ]]; then
+    if confirm "Do you want to automatically configure UFW (firewall)?"; then
       eval "$__resultvar="'true'""
     fi
     ;;
   rocky | almalinux)
-    echo -e -n "* Do you want to automatically configure firewall-cmd (firewall)? (y/N): "
-    read -r CONFIRM_FIREWALL_CMD
-
-    if [[ "$CONFIRM_FIREWALL_CMD" =~ [Yy] ]]; then
+    if confirm "Do you want to automatically configure firewall-cmd (firewall)?"; then
       eval "$__resultvar="'true'""
     fi
     ;;
@@ -491,10 +483,7 @@ check_os_x86_64() {
     warning "Detected CPU architecture $CPU_ARCHITECTURE"
     warning "Using any other architecture than 64 bit (x86_64) will cause problems."
 
-    echo -e -n "* Are you sure you want to proceed? (y/N):"
-    read -r choice
-
-    if [[ ! "$choice" =~ [Yy] ]]; then
+    if ! confirm "Are you sure you want to proceed?"; then
       error "Installation aborted!"
       exit 1
     fi
@@ -516,9 +505,7 @@ check_virt() {
   case "$virt_serv" in
   *openvz* | *lxc*)
     warning "Unsupported type of virtualization detected. Please consult with your hosting provider whether your server can run Docker or not. Proceed at your own risk."
-    echo -e -n "* Are you sure you want to proceed? (y/N): "
-    read -r CONFIRM_PROCEED
-    if [[ ! "$CONFIRM_PROCEED" =~ [Yy] ]]; then
+    if ! confirm "Are you sure you want to proceed?"; then
       error "Installation aborted!"
       exit 1
     fi
