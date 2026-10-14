@@ -95,6 +95,12 @@ for bad in . "1 2" "[0-4]" 00 -1 "0;1"; do
   expect "malformed input '$bad' is rejected without crashing" "Invalid option" "Nothing to uninstall"
 done
 
+rm -f /tmp/curl-stub.log
+GITHUB_SOURCE=feature/some-branch run_menu "4\n"
+OUT="$(cat /tmp/curl-stub.log)"
+expect "GITHUB_SOURCE selects the branch scripts are loaded from" "/feature/some-branch/lib/lib.sh" "/feature/some-branch/ui/uninstall.sh"
+reject "no script loaded from Production when a branch is given" "/Production/"
+
 run_menu ""
 [ "$RC" -ne 0 ] && pass "EOF on stdin exits instead of looping (rc=$RC)" || fail "EOF on stdin exits instead of looping"
 

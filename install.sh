@@ -29,7 +29,9 @@ set -e
 #                                                                                    #
 ######################################################################################
 
-export GITHUB_SOURCE="Production"
+# Branch the scripts are loaded from; override to test a branch, e.g.
+#   sudo GITHUB_SOURCE=feature/hydro-style-cli bash install.sh
+export GITHUB_SOURCE="${GITHUB_SOURCE:-Production}"
 export SCRIPT_RELEASE="canary"
 export GITHUB_BASE_URL="https://raw.githubusercontent.com/kazaminosuke/Pelinstaller-26.04"
 

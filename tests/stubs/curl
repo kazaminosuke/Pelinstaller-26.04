@@ -9,11 +9,13 @@ while [ $# -gt 0 ]; do
   *) url="$1"; shift ;;
   esac
 done
+echo "$url" >>/tmp/curl-stub.log
 case "$url" in
 https://api.github.com/*) body='  "tag_name": "v9.9.9-test",' ;;
 https://raw.githubusercontent.com/*)
   rel="${url#https://raw.githubusercontent.com/}" # owner/repo/branch/path
-  rel="${rel#*/*/*/}"
+  rel="${rel#*/*/}"                               # branch/path
+  rel="${rel#"${GITHUB_SOURCE:-Production}"/}"    # branch names may contain "/"
   body="$(cat "$PELINSTALLER_REPO/$rel")" || exit 22
   ;;
 *) echo "curl stub: unexpected URL $url" >&2; exit 7 ;;
