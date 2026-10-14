@@ -132,9 +132,16 @@ while [ "$done" == false ]; do
 
   [ -z "$action" ] && error "Input is required" && continue
 
-  valid_input=("$(for ((i = 0; i <= ${#actions[@]} - 1; i += 1)); do echo "${i}"; done)")
-  [[ ! " ${valid_input[*]} " =~ ${action} ]] && error "Invalid option"
-  [[ " ${valid_input[*]} " =~ ${action} ]] && done=true && IFS=";" read -r i1 i2 <<<"${actions[$action]}" && execute "$i1" "$i2"
+  # Accept only a plain index (0, 1, ...) that exists in the list. The old
+  # regex match let input such as "." or "[0-4]" through and crashed the menu.
+  if [[ ! "$action" =~ ^(0|[1-9][0-9]*)$ ]] || ((action >= ${#actions[@]})); then
+    error "Invalid option"
+    continue
+  fi
+
+  done=true
+  IFS=";" read -r i1 i2 <<<"${actions[$action]}"
+  execute "$i1" "$i2"
 done
 
 # Remove lib.sh, so next time the script is run the, newest version is downloaded.

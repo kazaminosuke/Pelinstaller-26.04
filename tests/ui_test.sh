@@ -89,6 +89,12 @@ for bad in 5 9 12 abc; do
   expect "out-of-range input '$bad' is rejected" "Invalid option" "Nothing to uninstall"
 done
 
+# Inputs that used to slip through the substring/regex match and crash the menu
+for bad in . "1 2" "[0-4]" 00 -1 "0;1"; do
+  run_menu "$bad\n4\n"
+  expect "malformed input '$bad' is rejected without crashing" "Invalid option" "Nothing to uninstall"
+done
+
 run_menu ""
 [ "$RC" -ne 0 ] && pass "EOF on stdin exits instead of looping (rc=$RC)" || fail "EOF on stdin exits instead of looping"
 
