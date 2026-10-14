@@ -116,6 +116,13 @@ run_menu "0\ny\n\nowner/repo\n\nmy-branch\npanel.test\nn\nn\n"
 expect "panel: custom source requires repo and branch" \
   "Repository (owner/repo) cannot be empty" "Branch cannot be empty" "owner/repo" "my-branch" "Installation aborted"
 
+# A resolvable domain: Let's Encrypt is offered and the firewall opt-out warned about
+export STUB_IP_RC=1
+run_menu "0\nn\npanel.test\nn\nn\nn\nn\n"
+expect "panel: firewall opt-out warning shown before Let's Encrypt" \
+  "Let's Encrypt requires port 80/443" "Assume SSL" "Installation aborted"
+unset STUB_IP_RC
+
 mkdir -p /var/www/pelican
 run_menu "0\nn\n"
 expect "panel: existing installation warning, 'n' aborts" "already have Pelican panel" "Installation aborted"
