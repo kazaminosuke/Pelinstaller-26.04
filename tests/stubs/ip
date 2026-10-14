@@ -1,0 +1,3 @@
+#!/bin/bash
+# ip stub: every address "resolves", so Let's Encrypt prompts are skipped
+exit "${STUB_IP_RC:-0}"

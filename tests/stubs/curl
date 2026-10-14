@@ -1,0 +1,21 @@
+#!/bin/bash
+# Test stub for curl: serves repository files from $PELINSTALLER_REPO instead of
+# GitHub and returns a fixed release tag for the GitHub API. Never touches the network.
+out="" url=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+  -o) out="$2"; shift 2 ;;
+  -*) shift ;;
+  *) url="$1"; shift ;;
+  esac
+done
+case "$url" in
+https://api.github.com/*) body='  "tag_name": "v9.9.9-test",' ;;
+https://raw.githubusercontent.com/*)
+  rel="${url#https://raw.githubusercontent.com/}" # owner/repo/branch/path
+  rel="${rel#*/*/*/}"
+  body="$(cat "$PELINSTALLER_REPO/$rel")" || exit 22
+  ;;
+*) echo "curl stub: unexpected URL $url" >&2; exit 7 ;;
+esac
+if [ -n "$out" ]; then printf '%s\n' "$body" >"$out"; else printf '%s\n' "$body"; fi
