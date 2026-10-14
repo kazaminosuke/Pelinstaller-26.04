@@ -98,6 +98,12 @@ done
 run_menu ""
 [ "$RC" -ne 0 ] && pass "EOF on stdin exits instead of looping (rc=$RC)" || fail "EOF on stdin exits instead of looping"
 
+mkdir -p /etc/pelican
+run_menu "9\n4\nn\n"
+expect "menu shows detected components" "Panel not installed" "Wings (/etc/pelican)"
+[ "$(count "Wings (/etc/pelican)")" -ge 2 ] && pass "status shown again after invalid input" || fail "status shown again after invalid input"
+rm -rf /etc/pelican
+
 # ------------------------------------------------------------------ #
 # Panel screen (option 0)
 # ------------------------------------------------------------------ #

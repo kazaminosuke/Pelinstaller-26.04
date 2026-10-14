@@ -102,15 +102,21 @@ execute() {
 
 welcome ""
 
+# Detected components, shown above the menu
+print_install_status() {
+  print_section "Detected on this machine"
+  if [ -d "/var/www/pelican" ]; then print_status true "Panel" "/var/www/pelican"; else print_status false "Panel not installed"; fi
+  if [ -d "/etc/pelican" ]; then print_status true "Wings" "/etc/pelican"; else print_status false "Wings not installed"; fi
+}
+
 done=false
 while [ "$done" == false ]; do
   options=(
-    "Install the Panel - Standard installation of the Pelican Panel"
-    "Install Wings - Standard installation of the Pelican Wings"
-    "Install Both Standard [0] and [1] on the same machine (wings script runs after panel)"
-    "Both Test Environment - Full automation and zero prompts, HTTP-only"
-
-    "Attempt to uninstall panel or wings with (the versions that lives in Production, may be broken!)"
+    "Install the Panel|Standard installation of the Pelican Panel"
+    "Install Wings|Standard installation of the Pelican Wings"
+    "Install Both Panel [0] and Wings [1]|Same machine; the Wings script runs after the Panel"
+    "Both Test Environment|Full automation and zero prompts, HTTP-only"
+    "Attempt to uninstall panel or wings|Uses the versions that live in Production, may be broken!"
   )
 
   actions=(
@@ -121,13 +127,18 @@ while [ "$done" == false ]; do
     "uninstall"
   )
 
-  output "What would you like to do?"
+  # Menu sections: the index each section starts at, and its title
+  sections=([0]="Install" [3]="Testing" [4]="Maintenance")
+
+  print_install_status
 
   for i in "${!options[@]}"; do
-    output "[$i] ${options[$i]}"
+    [ -n "${sections[$i]:-}" ] && print_section "${sections[$i]}"
+    print_menu_item "$i" "${options[$i]%%|*}" "${options[$i]#*|}"
   done
+  echo ""
 
-  echo -n "* Input 0-$((${#actions[@]} - 1)): "
+  echo -e -n "* ${COLOR_ACCENT}?${COLOR_NC} Select an option [0-$((${#actions[@]} - 1))]: "
   read -r action
 
   [ -z "$action" ] && error "Input is required" && continue
