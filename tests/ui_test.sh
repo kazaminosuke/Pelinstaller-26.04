@@ -77,7 +77,21 @@ cleanup_state
 run_menu "4\n"
 expect "menu lists all five options" \
   "Install the Panel" "Install Wings" "Install Both" "Test Environment" "uninstall"
-expect "menu shows copyright notices" "Vilhelm Prytz" "Matthew Jacob" "not associated with the official Pelican Project"
+expect "menu shows copyright notices" \
+  "Copyright (C) 2018 - 2024, Vilhelm Prytz, <vilhelm@prytznet.se>" \
+  "Copyright (C) 2021 - 2024, Matthew Jacob, <git@matthew.network>" \
+  "This script is not associated with the official Pelican Project."
+
+for f in "$REPO"/install.sh "$REPO"/lib/lib.sh "$REPO"/ui/*.sh "$REPO"/installers/*.sh; do
+  f="${f#"$REPO"/}"
+  # installers/basic.sh carries a shorter notice of its own; all others the GPL header
+  if grep -qE "Copyright (\(C\) 2018 - 2024, Vilhelm Prytz|Matthew Jacob 2021-2024)" "$REPO/$f" &&
+    { [ "$f" == installers/basic.sh ] || grep -qF "GNU General Public License" "$REPO/$f"; }; then
+    pass "license header kept in $f"
+  else
+    fail "license header kept in $f"
+  fi
+done
 expect "option 4 opens uninstall screen" "Nothing to uninstall"
 
 run_menu "\n4\n"
